@@ -80,10 +80,8 @@ namespace DirectoryCopier.ViewModel
                 if (fileInfos.Length > 0)
                 {
                     foreach (FileInfo file in fileInfos)
-                    {
-                           File.Create(pathTo);
-                        // BinaryReader = new BinaryReader(); // как преобразовать файл в streamFile?
-                        CopyFiles(file.FullName, pathTo);
+                    {                      
+                        CopyFiles(file, pathTo);
                     }
 
                 }
@@ -113,21 +111,28 @@ namespace DirectoryCopier.ViewModel
             }
         }
 
-        public void CopyFiles(FileInfo toFile, FileInfo fromFile)
+        public void CopyFiles(FileInfo fromFile, string pathTo)
         {
-            using (BinaryReader binaryReader = new BinaryReader(File.Open(fromFile.Name, FileMode.Open)))
+            using (FileStream binaryReader = new FileStream(fromFile.FullName, FileMode.Open))
             {
-                byte[] bytes = binaryReader.ReadBytes(4); //автоматически будет перемещаться?
+                byte[] bytes = new byte[4];
 
-                BinaryWriterOfFiles(toFile, bytes);
+                while(binaryReader.CanRead)
+                {
+                    IAsyncResult result = binaryReader.BeginRead(bytes, 0, 4, null, null);
+                    BinaryWriterOfFiles(pathTo, bytes);
+                    binaryReader.EndRead(result);
+                }
             }
         }
 
-        private void BinaryWriterOfFiles(FileInfo toFile, byte[] bytes)
+       
+        private void BinaryWriterOfFiles(string pathTo, byte[] bytes)
         {
-            using (BinaryWriter binaryWriter = new BinaryWriter(File.Open(toFile.Name, FileMode.OpenOrCreate)))
+            using (FileStream binaryWriter = new FileStream(pathTo, FileMode.OpenOrCreate))
             {
-                binaryWriter.Write(bytes);
+              IAsyncResult result= binaryWriter.BeginWrite(bytes, 0, bytes.Length, null, null);
+                binaryWriter.EndWrite(result);
             }
         }
     }
