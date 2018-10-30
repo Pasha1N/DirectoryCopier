@@ -80,60 +80,72 @@ namespace DirectoryCopier.ViewModel
                 if (fileInfos.Length > 0)
                 {
                     foreach (FileInfo file in fileInfos)
-                    {                      
-                        CopyFiles(file, pathTo);
+                    {
+                        string filePath = string.Concat(pathTo,"\\"+ file.Name);
+
+                        CopyFiles(file, filePath);
                     }
-
                 }
+                {
+                    //if (directoryInfos != null)
+                    //{
+                    //    foreach (DirectoryInfo directory in directoryInfos)
+                    //    {
+                    //        try
+                    //        {
+                    //            FileInfo[] currentDirectoryFiles = directory.GetFiles( );
 
+                    //            foreach (FileInfo item in currentDirectoryFiles)
+                    //            {
 
-                //if (directoryInfos != null)
-                //{
-                //    foreach (DirectoryInfo directory in directoryInfos)
-                //    {
-                //        try
-                //        {
-                //            FileInfo[] currentDirectoryFiles = directory.GetFiles( );
+                    //            }
+                    //        }
+                    //        catch (UnauthorizedAccessException)
+                    //        {
+                    //        }
 
-                //            foreach (FileInfo item in currentDirectoryFiles)
-                //            {
-
-                //            }
-                //        }
-                //        catch (UnauthorizedAccessException)
-                //        {
-                //        }
-
-                //        //GetDirectories(directory.FullName);
-                //    }
-                //}
-
+                    //        //GetDirectories(directory.FullName);
+                    //    }
+                    //}
+                }
             }
         }
 
         public void CopyFiles(FileInfo fromFile, string pathTo)
         {
-            using (FileStream binaryReader = new FileStream(fromFile.FullName, FileMode.Open))
-            {
-                byte[] bytes = new byte[4];
+            FileStream binaryReader = new FileStream(fromFile.FullName, FileMode.Open, FileAccess.Read);
 
-                while(binaryReader.CanRead)
-                {
-                    IAsyncResult result = binaryReader.BeginRead(bytes, 0, 4, null, null);
-                    BinaryWriterOfFiles(pathTo, bytes);
-                    binaryReader.EndRead(result);
-                }
+            byte[] bytes = new byte[4];
+
+            while (binaryReader.CanRead)
+            {
+                IAsyncResult result = binaryReader.BeginRead(bytes, 0, 4, ReadCallback, binaryReader);
+                BinaryWriterOfFiles(pathTo, bytes);
             }
         }
 
-       
+        private void ReadCallback(IAsyncResult result)
+        {
+            Stream stream = (Stream)result.AsyncState;
+            stream.EndRead(result);
+            stream.Close();
+        }
+
         private void BinaryWriterOfFiles(string pathTo, byte[] bytes)
         {
-            using (FileStream binaryWriter = new FileStream(pathTo, FileMode.OpenOrCreate))
-            {
-              IAsyncResult result= binaryWriter.BeginWrite(bytes, 0, bytes.Length, null, null);
-                binaryWriter.EndWrite(result);
-            }
+            FileStream binaryWriter = new FileStream(pathTo, FileMode.Create, FileAccess.Write);
+
+            binaryWriter.BeginWrite(bytes, 0, bytes.Length, WriteCallback, binaryWriter);
         }
+
+        private void WriteCallback(IAsyncResult result)
+        {
+            Stream stream = (Stream)result.AsyncState;
+            stream.EndWrite(result);
+            stream.Close();
+        }
+
+
+
     }
 }
