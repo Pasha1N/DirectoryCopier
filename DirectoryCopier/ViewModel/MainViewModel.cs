@@ -16,6 +16,7 @@ namespace DirectoryCopier.ViewModel
     {
         private ICommand commandGetPathFrom;
         private ICommand commandGetPathWhere;
+        private byte[] bytes = new byte[4000];
         private string pathFrom;
         private string pathTo;
 
@@ -114,34 +115,43 @@ namespace DirectoryCopier.ViewModel
         public void CopyFiles(FileInfo fromFile, string pathTo)
         {
             FileStream binaryReader = new FileStream(fromFile.FullName, FileMode.Open, FileAccess.Read);
-
-            byte[] bytes = new byte[4];
+            object sync = new object();
 
             while (binaryReader.CanRead)
             {
                 IAsyncResult result = binaryReader.BeginRead(bytes, 0, 4, ReadCallback, binaryReader);
-                BinaryWriterOfFiles(pathTo, bytes);
             }
         }
 
-        private void ReadCallback(IAsyncResult result)
+        private void ReadCallback(IAsyncResult binaryReader)
         {
-            Stream stream = (Stream)result.AsyncState;
-            stream.EndRead(result);
-            stream.Close();
+            Stream stream = (Stream)binaryReader.AsyncState;
+           
+            BinaryWriterOfFiles(pathTo, bytes);
+
+            if (stream.CanRead)
+            {
+            }
+            else
+            {
+                stream.Close();
+            }
+            stream.EndRead(binaryReader);
         }
 
         private void BinaryWriterOfFiles(string pathTo, byte[] bytes)
         {
-            FileStream binaryWriter = new FileStream(pathTo, FileMode.Create, FileAccess.Write);
+              FileStream binaryWriter = new FileStream(pathTo, FileMode.Create, FileAccess.Write);
 
             binaryWriter.BeginWrite(bytes, 0, bytes.Length, WriteCallback, binaryWriter);
+
+           
         }
 
-        private void WriteCallback(IAsyncResult result)
+        private void WriteCallback(IAsyncResult binaryWriter)
         {
-            Stream stream = (Stream)result.AsyncState;
-            stream.EndWrite(result);
+            Stream stream = (Stream)binaryWriter.AsyncState;
+            stream.EndWrite(binaryWriter);
             stream.Close();
         }
 
