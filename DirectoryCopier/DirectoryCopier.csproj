@@ -61,6 +61,7 @@
     </Compile>
     <Compile Include="Command\Command.cs" />
     <Compile Include="Command\DelegateCommand.cs" />
+    <Compile Include="Models\StateParameters.cs" />
     <Compile Include="Utilities\EventINotifyPropertyChanged.cs" />
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="View\MainWindow.xaml.cs">

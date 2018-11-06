@@ -9,6 +9,7 @@ using System.Windows.Input;
 using DirectoryCopier.Command;
 using DirectoryCopier.Utilities;
 using System.Windows.Forms;
+using DirectoryCopier.Models;
 
 namespace DirectoryCopier.ViewModel
 {
@@ -82,7 +83,7 @@ namespace DirectoryCopier.ViewModel
                 {
                     foreach (FileInfo file in fileInfos)
                     {
-                        string filePath = string.Concat(pathTo,"\\"+ file.Name);
+                        string filePath = string.Concat(pathTo, "\\" + file.Name);
 
                         CopyFiles(file, filePath);
                     }
@@ -117,45 +118,53 @@ namespace DirectoryCopier.ViewModel
             FileStream binaryReader = new FileStream(fromFile.FullName, FileMode.Open, FileAccess.Read);
             object sync = new object();
 
-            while (binaryReader.CanRead)
-            {
-                IAsyncResult result = binaryReader.BeginRead(bytes, 0, 4, ReadCallback, binaryReader);
-            }
+            // while (binaryReader.Position < binaryReader.Length)
+            //{
+            StateParameters state = new StateParameters();
+            state.Stream = binaryReader;
+            state.PathTo = pathTo;
+            //IAsyncResult result =
+                binaryReader.BeginRead(bytes, 0, 4, ReadCallback, state);
+            //}
         }
 
-        private void ReadCallback(IAsyncResult binaryReader)
+        private void ReadCallback(IAsyncResult state)
         {
-            Stream stream = (Stream)binaryReader.AsyncState;
-           
-            BinaryWriterOfFiles(pathTo, bytes);
+            StateParameters stateParameters = (StateParameters)state.AsyncState;
+            Stream stream = stateParameters.Stream;
+            long foo = stream.EndRead(state);
 
-            if (stream.CanRead)
-            {
-            }
-            else
+            BinaryWriterOfFiles(stateParameters.PathTo, bytes,offset);
+
+            if (stream.Position >= stream.Length)
             {
                 stream.Close();
             }
-            stream.EndRead(binaryReader);
+            else
+            {
+                stream.BeginRead(bytes, 0, 4000, ReadCallback, state);
+            }
         }
 
         private void BinaryWriterOfFiles(string pathTo, byte[] bytes)
         {
-              FileStream binaryWriter = new FileStream(pathTo, FileMode.Create, FileAccess.Write);
-
+            FileStream binaryWriter = new FileStream(pathTo, FileMode.Create, FileAccess.Write);
             binaryWriter.BeginWrite(bytes, 0, bytes.Length, WriteCallback, binaryWriter);
-
-           
         }
 
         private void WriteCallback(IAsyncResult binaryWriter)
         {
             Stream stream = (Stream)binaryWriter.AsyncState;
+
+            if (stream.Position >= stream.Length)
+            {
+                stream.Close();
+            }
+            else
+            {
+                stream.BeginWrite(bytes, 0, bytes.Length, WriteCallback, binaryWriter);
+            }
             stream.EndWrite(binaryWriter);
-            stream.Close();
         }
-
-
-
     }
 }
