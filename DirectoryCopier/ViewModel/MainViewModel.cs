@@ -17,7 +17,7 @@ namespace DirectoryCopier.ViewModel
     {
         private ICommand commandGetPathFrom;
         private ICommand commandGetPathWhere;
-        private byte[] bytes = new byte[4000];
+        private byte[] bytes = new byte[4096];
         private string pathFrom;
         private string pathTo;
 
@@ -130,11 +130,11 @@ namespace DirectoryCopier.ViewModel
 
         private void ReadCallback(IAsyncResult state)
         {
-            StateParameters stateParameters = (StateParameters)state.AsyncState;
+            StateParameters stateParameters = state.AsyncState;
             Stream stream = stateParameters.Stream;
-            long foo = stream.EndRead(state);
+            long length = stream.EndRead(state);
 
-            BinaryWriterOfFiles(stateParameters.PathTo, bytes,offset);
+            BinaryWriterOfFiles(stateParameters.PathTo, bytes,length);
 
             if (stream.Position >= stream.Length)
             {
@@ -142,14 +142,14 @@ namespace DirectoryCopier.ViewModel
             }
             else
             {
-                stream.BeginRead(bytes, 0, 4000, ReadCallback, state);
+                stream.BeginRead(bytes, 0, 4096, ReadCallback, state);
             }
         }
 
-        private void BinaryWriterOfFiles(string pathTo, byte[] bytes)
+        private void BinaryWriterOfFiles(string pathTo, byte[] bytes, long length)
         {
             FileStream binaryWriter = new FileStream(pathTo, FileMode.Create, FileAccess.Write);
-            binaryWriter.BeginWrite(bytes, 0, bytes.Length, WriteCallback, binaryWriter);
+            binaryWriter.BeginWrite(bytes, 0, (int)length, WriteCallback, binaryWriter);
         }
 
         private void WriteCallback(IAsyncResult binaryWriter)
