@@ -130,7 +130,7 @@ namespace DirectoryCopier.ViewModel
 
         private void ReadCallback(IAsyncResult state)
         {
-            StateParameters stateParameters = state.AsyncState;
+            StateParameters stateParameters = (StateParameters)state.AsyncState;
             Stream stream = stateParameters.Stream;
             long length = stream.EndRead(state);
 
@@ -142,7 +142,7 @@ namespace DirectoryCopier.ViewModel
             }
             else
             {
-                stream.BeginRead(bytes, 0, 4096, ReadCallback, state);
+                stream.BeginRead(bytes, 0, 4096, ReadCallback, stateParameters);
             }
         }
 
